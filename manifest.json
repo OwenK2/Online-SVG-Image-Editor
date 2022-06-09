@@ -7,15 +7,15 @@
   "theme_color": "#0D1017",
   "description": "A simple editor for SVG images",
   "icons": [{
-    "src": "assets/favicon.png",
+    "src": "assets/imgs/favicon.webp",
     "sizes": "512x512",
-    "type": "image/png",
+    "type": "image/webp",
     "purpose": "any"
   },
   {
-    "src": "assets/favicon_maskable.png",
+    "src": "assets/imgs/favicon_maskable.webp",
     "sizes": "512x512",
-    "type": "image/png",
+    "type": "image/webp",
     "purpose": "any maskable"
   }]
 }

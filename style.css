@@ -27,17 +27,9 @@
 	--border-dark: #3d4045;
 	--highlight: rgba(255, 255, 255, .05);
 	--highlight-hard: rgba(255, 255, 255, .1);
-	--accent: #F1C40F;
+	--accent: #AAD94C;
 	--error: #D95757;
 	--shade: rgba(0, 0, 0, .5);
-	--ansi-black: #0D1017;
-	--ansi-red: #D95757;
-	--ansi-green: #AAD94C;
-	--ansi-yellow: #FFB454;
-	--ansi-blue: #59C2FF;
-	--ansi-purple: #D2A6FF;
-	--ansi-cyan:  #95E6CB;
-	--ansi-white:  #FEFEFE;
 }
 
 * {
