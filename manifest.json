@@ -1,0 +1,21 @@
+{
+  "name": "Online SVG Image Editor",
+  "short_name": "SVG Editor",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "background_color": "#0D1017",
+  "theme_color": "#0D1017",
+  "description": "A simple editor for SVG images",
+  "icons": [{
+    "src": "assets/favicon.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "purpose": "any"
+  },
+  {
+    "src": "assets/favicon_maskable.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "purpose": "any maskable"
+  }]
+}

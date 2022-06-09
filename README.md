@@ -1,5 +1,9 @@
-# Online SVG Editor
+# Online SVG Image Editor
+An online editor for SVG files with an easy to use UI.
 
-An online photo editor for SVG files. Edit and create files using its friendly interface.
+## Author
+  - **Owen Kuhn** - *Development* -
+    [Github](https://github.com/OwenK2)
 
-![Screenshot](./screenshot.png?raw=true "Screenshot")
+## License
+This project is licensed under the [MIT License](LICENSE)
