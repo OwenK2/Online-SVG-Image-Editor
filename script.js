@@ -1,12 +1,11 @@
 const MAX_FILE_LENGTH = 20;
 
-let file_name_elem, ace_elem, editor, svg_wrapper;
+let file_name_elem, ace_elem, editor_area, editor, svg, tmp_tool;
 
-let position = {x: 0, y: 0};
-let scale = 1;
-let rotation = 0;
-let start_position = start_scale = start_rotation = null;
+let theme = 'dark';
+let tool = 'click';
 let mouse_down = false;
+let selected = [];
 
 window.addEventListener('load', function() {
 	if('serviceWorker' in navigator) {
@@ -19,19 +18,24 @@ window.addEventListener('load', function() {
 	editor_area = document.querySelector('.editor');
 	file_name_elem = document.querySelector('.file_name > input');
 	ace_elem = document.getElementById('ace');
-	svg_wrapper = document.querySelector('.svg_wrapper');
 	
-
-	resize_input(file_name_elem);
-	setup_ace();
 	window.addEventListener('keydown', on_keydown);
+	window.addEventListener('keyup', on_keyup);
 	editor_area.addEventListener('wheel', on_wheel);
 	editor_area.addEventListener('gesturestart', on_gesture_start);
 	editor_area.addEventListener('gesturechange', on_gesture_change);
 	editor_area.addEventListener('gestureend', on_gesture_end);
 	editor_area.addEventListener('mousedown', on_mousedown);
 	window.addEventListener('mousemove', on_mousemove);
-	window.addEventListener('mouseup', on_mouseup);
+	window.addEventListener('mouseup', on_mouseup); 
+	
+
+	setup_ace();
+	let theme_listener = window.matchMedia("(prefers-color-scheme: dark)");
+	theme_listener.addListener(function(e){set_theme(e.matches ? 'dark' : 'light')});
+	set_theme(localStorage.getItem('theme') || (theme_listener.matches ? 'dark' : 'light'));
+	resize_input(file_name_elem);
+	new_svg();
 
 });
 
@@ -39,84 +43,122 @@ window.addEventListener('load', function() {
 function on_keydown(event) {
 	if(event.key === '0' && (event.metaKey || event.ctrlKey)) {
 		event.preventDefault();
-		reset_transform();
+		svg.reset_transform();
 	}
 	if(event.key === 'f' && (event.metaKey || event.ctrlKey)) {
 		event.preventDefault();
 	}
+	if(event.key === 'Shift') {
+		tmp_tool = tool;
+		tool = 'grab';
+		select_tool(tool);
+	}
+}
+function on_keyup(event) {
+	if(event.key === 'Shift' && tmp_tool) {
+		tool = tmp_tool
+		select_tool(tool);
+		tmp_tool = false;
+	}
 }
 
-// Transforming
-function reset_transform() {
-	svg_wrapper.style.transition = "transform .3s";
-	position = {x: 0, y: 0};
-	scale = 1;
-	rotation = 0;
-	transform_svg();
-	setTimeout(function() {svg_wrapper.style.transition = "none";}, 300);
+// Editor Functions
+function new_svg(w = 512, h = 512) {
+	if(svg) {svg.delete();}
+	svg = new SVG(w, h);
 }
-function on_wheel(event) {
-	event.preventDefault();
-	event.stopPropagation();
-	if(Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
-		scale += Math.abs(event.deltaX) / event.deltaX * scale / 40;
+function select_tool(elem) {
+	if(typeof elem === "string") {elem = document.getElementById('tool_' + elem);}
+	elem.parentNode.querySelectorAll('.selected').forEach(function(e) {e.classList.remove('selected');});
+	tool = elem.id.substring(5);
+	elem.classList.add('selected');
+	switch(tool) {
+		case "click":
+			editor_area.style.cursor = 'default';
+		break;
+		case "grab":
+			editor_area.style.cursor = 'grab';
+		break;
+		default:
+			editor_area.style.cursor = 'crosshair';
 	}
-	else {
-		scale += -Math.abs(event.deltaY) / event.deltaY * scale / 40;
-	}
-	transform_svg();
-}
-function on_gesture_start(event) {
-	event.preventDefault();
-	event.stopPropagation();
-	start_rotation = rotation;
-	start_scale = scale;
-}
-function on_gesture_change(event) {
-	event.preventDefault();
-	event.stopPropagation();
-	if(start_rotation !== null && start_scale !== null) {
-		rotation = (start_rotation + event.rotation) % 360;
-		scale = start_scale * event.scale;
-		transform_svg();
-	}
-}
-function on_gesture_end(event) {
-	event.preventDefault();
-	event.stopPropagation();
-	start_rotation = rotation;
-	start_scale = scale;
 }
 function on_mousedown(event) {
-	start_position = {x: event.clientX, y: event.clientY};
+	switch(tool) {
+		case 'grab':
+			editor_area.style.cursor = 'grabbing';
+			svg.sp = {x: event.clientX, y: event.clientY};
+			break;
+		case 'line':
+			let pt = svg.to_svg_space(event.clientX, event.clientY);
+			selected = [new Line(svg.elem, new Point(pt), new Point(pt))];
+			break;
+	}
 	mouse_down = true;
 	on_mousemove(event);
 }
 function on_mousemove(event) {
 	if(mouse_down) {
-		position.x += event.clientX - start_position.x;
-		position.y += event.clientY - start_position.y;
-		start_position = {x: event.clientX, y: event.clientY};
-		transform_svg();
+		switch(tool) {
+			case 'grab':
+				svg.translate(event.clientX, event.clientY);
+				break;
+			case 'line':
+				selected[0].draw(event);
+				break;
+		}
 	}
 }
 function on_mouseup(event) {
+	if(mouse_down) {
+		switch(tool) {
+			case 'grab':
+				editor_area.style.cursor = 'grab';
+				break;
+			case 'line':
+				selected = [];
+				svg.update_code();
+				break;
+		}
+	}
 	mouse_down = false;
 }
-function transform_svg() {
-	var snapped_scale = snap_value(scale, [1], .1);
-	var snapped_rotation = snap_value(rotation, [0, 90, 180, 270], 5);
-	svg_wrapper.style.transform = "translate(calc(-50% + "+position.x+"px), calc(-50% + "+position.y+"px)) rotate("+snapped_rotation+"deg) scale("+snapped_scale+")";
+function on_wheel(event) {
+	event.preventDefault();
+	event.stopPropagation();
+	if(Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+		svg.scale += Math.abs(event.deltaX) / event.deltaX * svg.scale / 40;
+	}
+	else {
+		svg.scale += -Math.abs(event.deltaY) / event.deltaY * svg.scale / 40;
+	}
+	svg.transform();
 }
-
-
+function on_gesture_start(event) {
+	event.preventDefault();
+	event.stopPropagation();
+	svg.ss = svg.scale;
+}
+function on_gesture_change(event) {
+	event.preventDefault();
+	event.stopPropagation();
+	if(svg.ss !== null) {
+		svg.scale = svg.ss * event.scale;
+		svg.transform();
+	}
+}
+function on_gesture_end(event) {
+	event.preventDefault();
+	event.stopPropagation();
+	svg.ss = svg.scale;
+}
 
 
 // UI Functions
 function setup_ace() {
 	editor = ace.edit(ace_elem);
 	editor.setOptions({
-		theme: 'ace/theme/default',
+		theme: 'ace/theme/'+theme,
 		mode: "ace/mode/svg",
 		wrap: true,
 		behavioursEnabled: true,
@@ -132,6 +174,22 @@ function setup_ace() {
 		readOnly: true,
 	});
 	// this.ace.on('change', function(d) {});
+}
+function toggle_theme() {
+	if(theme === 'dark') {set_theme('light');}
+	else {set_theme('dark');}
+}
+function set_theme(t) {
+	theme = t;
+	if(theme === 'dark') {
+		editor.setTheme('ace/theme/dark');
+		document.querySelector(':root').className = '';
+	}
+	else {
+		editor.setTheme('ace/theme/light');
+		document.querySelector(':root').className = 'light';
+	}
+	localStorage.setItem('theme', theme);
 }
 function filter(input, type) {
 	var cursor = input.selectionStart;
