@@ -4,6 +4,7 @@ class Line {
 		this.parent = parent;
 		this.pts = [pt1, pt2];
 		this.parent.appendChild(this.elem);
+		// this.elem.setAttribute('stroke', '')
 		this.render();
 	}
 	draw(event) {

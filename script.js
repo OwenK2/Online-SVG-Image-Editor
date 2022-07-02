@@ -37,6 +37,7 @@ window.addEventListener('load', function() {
 	resize_input(file_name_elem);
 	new_svg();
 
+	new ColorPicker();
 });
 
 // Event Listeners
